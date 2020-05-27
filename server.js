@@ -3,8 +3,13 @@ const http    = require('http');
 var  express  = require('express');
 const numCPUs = require('os').cpus().length;
 
-const app = express();
+const app  = express();
 app.server = http.createServer(app);
+
+//Route setup
+var router = express.Router();
+app.use('', router);
+
 if (cluster.isMaster) {
   console.log(`Master ${process.pid} is running`);
 
@@ -15,17 +20,18 @@ if (cluster.isMaster) {
 
   cluster.on('exit', (worker, code, signal) => {
     console.log(`worker ${worker.process.pid} died`);
-    console.log('Starting a new worker');
     //To handle zero downtime
+    console.log('Starting a new worker');
     cluster.fork(); 
   });
 } else {
+   
   // Workers can share any TCP connection
-  // In this case it is an HTTP server
   app.listen(3000, ()=> {
-    let message = `Worker : ${process.pid}`
+    let message = `Worker : ${process.pid} started`
     console.log(message)
+    require('./routes/route.js')(app.server, router);
   })
-
-  console.log(`Worker ${process.pid} started`);
 }
+
+
